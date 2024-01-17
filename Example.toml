@@ -1,0 +1,8 @@
+name = "custom-wall"
+
+[[screens]]
+# orientation
+id = pi-wall-tv-0
+height = 9
+width = 12
+bezel = 2
