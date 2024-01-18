@@ -1,8 +1,14 @@
 name = "custom-wall"
 
-[[screens]]
-# orientation
-id = pi-wall-tv-0
-height = 9
-width = 12
-bezel = 2
+[[rows]]
+  [[rows.screens]]
+    bezel = 2.75
+    height = 9
+    id = "pi-wall-tv-0"
+    width = 12
+
+  [[rows.screens]]
+    bezel = 1
+    height = 5.75
+    id = "pi-wall-tv-1"
+    width = 7.75

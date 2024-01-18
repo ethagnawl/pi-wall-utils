@@ -1,47 +1,51 @@
 use ini::Ini;
+use serde::Deserialize;
+use std::fs::File;
+use std::io::prelude::*;
 use std::process::Command;
 
-fn write_piwall_to_file() {
-    let mut conf = Ini::new();
+extern crate toml;
 
-    // [wall]
-    // width=1067
-    // height=613
-    // x=0
-    // y=0
+#[derive(Debug, Deserialize)]
+pub struct Screen {
+    id: String,
+    bezel: f32,
+    height: f32,
+    width: f32,
+}
 
-    // [pi1]
-    // wall=wall
-    // width=522
-    // height=293
-    // x=0
-    // y=0
+#[derive(Debug, Deserialize)]
+pub struct Row {
+    screens: Vec<Screen>,
+}
 
-    // [config]
-    // pi1=pi1
+#[derive(Debug, Deserialize)]
+pub struct Config {
+    name: String,
+    rows: Vec<Row>,
+}
 
-    conf.with_section(Some("wall"))
-        .set("height", "40")
-        .set("width", "40")
-        .set("x", "0")
-        .set("y", "0");
-    conf.with_section(Some("pi_wall_tv_0"))
-        .set("height", "20")
-        .set("wall", "wall")
-        .set("width", "20")
-        .set("x", "0")
-        .set("y", "0");
-    conf.with_section(Some("pi_wall_tv_1"))
-        .set("height", "20")
-        .set("wall", "wall")
-        .set("width", "20")
-        .set("x", "40")
-        .set("y", "0");
-    conf.with_section(Some("config"))
-        .set("pi1", "pi_wall_tv_0")
-        .set("pi2", "pi_wall_tv_1");
-    conf.write_to_file(".custom.piwall").unwrap();
-    println!("Done!")
+fn parse_config_file() -> Result<Config, String> {
+    let mut config_file = match File::open("Example.toml") {
+        Ok(file) => file,
+        Err(_) => return Err(String::from("Unable to open config file.")),
+    };
+    let mut contents = String::new();
+
+    match config_file.read_to_string(&mut contents) {
+        Ok(_) => (),
+        Err(_) => return Err(String::from("Unable to read config file.")),
+    }
+
+    println!("contents: {:#?}", contents);
+
+    let decoded = toml::from_str(&contents);
+    println!("decoded: {:#?}", decoded);
+
+    match decoded {
+        Ok(config) => Ok(config),
+        Err(error) => Err(error.to_string()),
+    }
 }
 
 fn copy_configs_to_clients() {
@@ -73,8 +77,75 @@ fn copy_configs_to_clients() {
     }
 }
 
+fn generate_piwall_config(config: Config) {
+    let mut wall_height = 0.0;
+    let mut wall_width = 0.0;
+
+    for row in config.rows.iter() {
+        let mut row_height = 0.0;
+        let mut row_width = 0.0;
+        for screen in row.screens.iter() {
+            row_width += screen.width;
+            if screen.height > row_height {
+                row_height = screen.height
+            }
+        }
+
+        if row_width > wall_width {
+            // TODO: does this make sense? would it be better to use the min or
+            // do this on a row-by-row basis?
+            wall_width = row_width
+        }
+
+        wall_height += row_height
+    }
+
+    let mut conf = Ini::new();
+    let wall_id = config.name;
+
+    conf.with_section(Some(wall_id.clone()))
+        .set("height", wall_height.to_string())
+        .set("width", wall_width.to_string())
+        .set("x", "0")
+        .set("y", "0");
+
+    for row in config.rows.iter() {
+        let mut offset = 0.0;
+        for (ii, screen) in row.screens.iter().enumerate() {
+            let offset_ = if ii == 0 { 0.0 } else { offset + screen.bezel };
+            conf.with_section(Some(screen.id.clone()))
+                .set("height", screen.height.to_string())
+                .set("wall", wall_id.clone())
+                .set("width", screen.width.to_string())
+                .set("x", offset_.to_string())
+                // TODO: compute using previous row height
+                // how should row height be computed? min? max? should it
+                // become a field?
+                .set("y", "0");
+            offset += offset_ + screen.width + screen.bezel
+        }
+    }
+
+    conf.with_section(Some(format!("{}_config", wall_id.clone())))
+        .set("pi1", "default");
+    for (i, row) in config.rows.iter().enumerate() {
+        for (ii, screen) in row.screens.iter().enumerate() {
+            conf.section_mut(Some(format!("{}_config", wall_id.clone())))
+                .unwrap()
+                .insert(format!("pi{}", (i + 1) + ii), screen.id.clone());
+        }
+    }
+
+    println!("conf: {:#?}", conf);
+
+    // TODO: alias? backup any existing piwalls?
+    conf.write_to_file(".piwall").unwrap();
+}
+
 fn main() {
-    // TODO: parse config
-    write_piwall_to_file();
+    let config = parse_config_file();
+    assert_eq!(config.is_ok(), true);
+    let config_ = config.unwrap();
+    generate_piwall_config(config_);
     copy_configs_to_clients()
 }
