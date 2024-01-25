@@ -7,9 +7,10 @@ use std::error::Error;
 use std::ffi::OsString;
 use std::fmt;
 use std::fs::File;
-use std::io::prelude::*;
+use std::io::Read;
 use std::process::Command;
 use std::str::FromStr;
+use tempfile::NamedTempFile;
 
 extern crate toml;
 
@@ -153,28 +154,33 @@ fn parse_config_file(config_file_path: &String) -> Result<Config, String> {
 }
 
 fn copy_configs_to_clients(config: &Config) -> Result<(), String> {
-    let local_config_path = String::from(".piwall");
-    let client_config_path = String::from("/home/peter/Downloads/");
+    // TODO: parameterize?
+    let local_piwall_config_path = String::from(".piwall");
+    let remote_piwall_config_path = String::from(format!("~/.piwall"));
+    let remote_tile_config_path = String::from(format!("~/.pitile"));
+
     for row in config.rows.iter() {
         for client in row.screens.iter() {
             let id = client.id.clone();
-            println!("copy {local_config_path} to: {id}:{client_config_path}");
+            println!("copy {local_piwall_config_path} to: {id}:{remote_piwall_config_path}");
 
             // TODO: abstract
             let mut shell = Command::new("sh");
             let output = shell
                 .arg("-c")
-                .arg(format!("scp {local_config_path} {id}:{client_config_path}"))
+                .arg(format!(
+                    "scp {local_piwall_config_path} {id}:{remote_piwall_config_path}"
+                ))
                 .status()
                 .expect("Could not copy {local_config_path} to: {id}");
 
             match output.code() {
                 Some(0) => {
-                    println!("Copying {local_config_path} to {id} succeeded.");
+                    println!("Copying {local_piwall_config_path} to {id} succeeded.");
                 }
                 Some(code) => {
                     return Err(format!(
-                        "Copying {local_config_path} to {id} failed with status code: {code}."
+                        "Copying {local_piwall_config_path} to {id} failed with status code: {code}."
                     ));
                 }
                 None => {
@@ -184,19 +190,26 @@ fn copy_configs_to_clients(config: &Config) -> Result<(), String> {
 
             println!("copy piwall config output: {:#?}", output);
 
+            let local_pitile = NamedTempFile::new()
+                .map_err(|error| format!("CopyConfigToClients error: {}", error));
+
+            // NOTE: unwrapping when setting local_pi_tile_path results in
+            // the temp file not being deleted after the scope exits!
+            let local_pitile_ = local_pitile.unwrap();
+            let local_pi_tile_path = local_pitile_.path().to_string_lossy().to_string();
+            println!("local_pi_tile_path: {:#?}", local_pi_tile_path);
+
             // TODO: abstract
-            println!("Copying .pitile to : {id}");
             let mut conf = Ini::new();
             conf.with_section(Some("tile")).set("id", id.clone());
-            conf.write_to_file(".pitile").unwrap();
+            conf.write_to_file(&local_pi_tile_path).unwrap();
 
-            // TODO: dump id out to ini, copy and cleanup?
-            // alternatively, is it possible to scp bytes?
-            let pi_tile = ".pitile";
             let mut shell = Command::new("sh");
             let output = shell
                 .arg("-c")
-                .arg(format!("scp {pi_tile} {id}:{client_config_path}"))
+                .arg(format!(
+                    "scp {local_pi_tile_path} {id}:{remote_tile_config_path}"
+                ))
                 // TODO: fail hard and fast using patterns established above
                 .status()
                 .expect("Could not copy .pitile to: {id}");
@@ -279,7 +292,7 @@ fn generate_piwall_config(config: &Config, output_path: Option<&str>) {
     println!("wrote piwall config to: {:#?}", output_path_);
 }
 
-fn start(config: &Config) {
+fn start(_config: &Config) {
     // TODO: everything!
     // presumably this would:
     // - ssh into the clients and start the listeners
@@ -291,7 +304,7 @@ fn start(config: &Config) {
     // a similar workflow? that prevents this application from having to do
     // anything clever but introduces another dependency, assumes folks are
     // familiar with tmux, etc..
-    println!("start fn has not yet been implemented.");
+    println!("start fn has not been implemented.");
 }
 
 fn main() -> Result<(), String> {
