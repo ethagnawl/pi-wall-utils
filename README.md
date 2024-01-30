@@ -63,12 +63,12 @@ cargo build
 
 ### Generate
 ```
-pi-wall-gen generate Example.toml
+/path/to/pi-wall-gen generate Example.toml
 ```
 
 ### Copy Configs
 ```
-pi-wall-gen copy-config-to-clients Example.toml
+/path/to/pi-wall-gen copy-config-to-clients Example.toml
 ```
 
 ## Future Work
