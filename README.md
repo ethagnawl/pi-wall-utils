@@ -53,7 +53,25 @@ name = "custom-wall"
 
 ## Commands
 ### Generate
+#### Cargo
+```
+cargo run generate Example.toml
+```
+
+#### Binary
+```
+./target/debug/pi-wall-gen generate Example.toml
+```
 ### Copy Configs
+#### Cargo
+```
+cargo run copy-config-to-clients Example.toml
+```
+
+#### Binary
+```
+./target/debug/pi-wall-gen copy-config-to-clients Example.toml
+```
 
 ## Usage
 
