@@ -153,6 +153,41 @@ fn parse_config_file(config_file_path: &String) -> Result<Config, String> {
     }
 }
 
+fn copy_pi_wall_to_client(
+    id: &String,
+    local_pi_wall_path: &String,
+    remote_piwall_path: &String,
+) -> Result<(), String> {
+    let mut shell = Command::new("sh");
+    let output = shell
+        .arg("-c")
+        .arg(format!(
+            "scp {local_pi_wall_path} {id}:{remote_piwall_path}"
+        ))
+        .status()
+        .expect("Could not copy {local_config_path} to: {id}");
+
+    match output.code() {
+        Some(0) => {
+            println!("Copying {local_pi_wall_path} to {id} succeeded.");
+        }
+        Some(code) => {
+            return Err(format!(
+                "Copying {local_pi_wall_path} to {id} failed with status code: {code}."
+            ));
+        }
+        None => {
+            return Err(String::from(
+                "Copying {local_config_path} to {id} failed when process was terminated by signal",
+            ));
+        }
+    }
+
+    println!("copy piwall config output: {:#?}", output);
+
+    Ok(())
+}
+
 fn copy_configs_to_clients(config: &Config) -> Result<(), String> {
     // TODO: parameterize?
     let local_piwall_config_path = String::from(".piwall");
@@ -164,31 +199,10 @@ fn copy_configs_to_clients(config: &Config) -> Result<(), String> {
             let id = client.id.clone();
             println!("copy {local_piwall_config_path} to: {id}:{remote_piwall_config_path}");
 
-            // TODO: abstract
-            let mut shell = Command::new("sh");
-            let output = shell
-                .arg("-c")
-                .arg(format!(
-                    "scp {local_piwall_config_path} {id}:{remote_piwall_config_path}"
-                ))
-                .status()
-                .expect("Could not copy {local_config_path} to: {id}");
-
-            match output.code() {
-                Some(0) => {
-                    println!("Copying {local_piwall_config_path} to {id} succeeded.");
-                }
-                Some(code) => {
-                    return Err(format!(
-                        "Copying {local_piwall_config_path} to {id} failed with status code: {code}."
-                    ));
-                }
-                None => {
-                    return Err(String::from("Copying {local_config_path} to {id} failed when process was terminated by signal"));
-                }
-            }
-
-            println!("copy piwall config output: {:#?}", output);
+            let copy_pi_wall_to_client_result =
+                copy_pi_wall_to_client(&id, &local_piwall_config_path, &remote_piwall_config_path);
+            // TODO: return application error
+            assert_eq!(copy_pi_wall_to_client_result.is_ok(), true);
 
             let local_pitile = NamedTempFile::new()
                 .map_err(|error| format!("CopyConfigToClients error: {}", error));
@@ -213,7 +227,20 @@ fn copy_configs_to_clients(config: &Config) -> Result<(), String> {
                 // TODO: fail hard and fast using patterns established above
                 .status()
                 .expect("Could not copy .pitile to: {id}");
-            println!("copy pitile config output: {:#?}", output);
+
+            match output.code() {
+                Some(0) => {
+                    println!("Copying {local_pi_tile_path} to {id} succeeded.");
+                }
+                Some(code) => {
+                    return Err(format!(
+                        "Copying {local_pi_tile_path} to {id} failed with status code: {code}."
+                    ));
+                }
+                None => {
+                    return Err(String::from("Copying {local_pi_tile_path} to {id} failed when process was terminated by signal"));
+                }
+            }
         }
     }
     Ok(())
