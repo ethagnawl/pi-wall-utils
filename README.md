@@ -14,6 +14,8 @@ In my research, I was not able to find a common workflow which didn't involve lo
 ### Generate
 The meta config file is capable of being used to dynamically generate valid .piwall and .pitile config files.
 
+It calculates the overall width and offsets for each screen according to the dimensions (height, width and bezel) defined in the screen config block.
+
 There are still some issues to be worked out around dynamic layout:
 
 #### Bezel Compensation
