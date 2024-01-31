@@ -6,7 +6,7 @@ This project is an attempt at smoothing out some of the rough edges encountered 
 
 There are a number of complimentary subcommands exposed by the pi-wall-utils CLI application which help in:
 - dynamically creating .piwall and (virtual) .pitile config files using a (new) meta config file format
-- distributing dynamically created config files to client devices
+- distributing config files to client devices
 
 In my research, I was not able to find a common workflow which didn't involve lots of manual calculations (i.e. in the case of .piwall) or copying of files between machines using SCP (at best) or USB drives (at worst) for .piwall and .pitile config files.
 
@@ -90,8 +90,13 @@ cargo build
 
 ## Future Work
 
-### Support multiple rows
+### Generate
+#### Support multiple rows
 Documented above
+
+### Copy Configs
+#### Parameterize .piwall path
+#### Make generate config operation an opt-in prerequisite
 
 ### Start command
 It would be very useful if this project exposed a "start" command (among other system management commands ...) which would allow users to "start" a PiWall instance using a single command. It seems like this is conventionally done manually using SSH and I've had success using tmux/tmuxinator -- more on that below.
