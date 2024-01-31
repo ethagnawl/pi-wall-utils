@@ -8,7 +8,7 @@ There are a number of complimentary subcommands exposed by the pi-wall-utils CLI
 - dynamically creating .piwall and (virtual) .pitile config files using a (new) meta config file format
 - distributing dynamically created config files to client devices
 
-In my research, I was not able to find a common workflow which didn't involve lots of manual calculations (i.e. in the case of .piwall) or copying of files between machines using SCP (at best), FTP, USB drives (at worst), etc. for .piwall and .pitile config files.
+In my research, I was not able to find a common workflow which didn't involve lots of manual calculations (i.e. in the case of .piwall) or copying of files between machines using SCP (at best) or USB drives (at worst) for .piwall and .pitile config files.
 
 ## Nomenclature
 This project and its documentation will use the following names to refer to the system's components:
@@ -24,7 +24,7 @@ The Raspberry Pi(s) which will be displaying the content via pwomxplayer.
 ### Generate
 The meta config file is capable of being used to dynamically generate valid .piwall and .pitile config files.
 
-It calculates the height, width and offsets (X and Y) for the top-level wall and each screen according to the dimensions (height, width and bezel) defined in the individual screen config blocks.
+It calculates the height, width and offsets (X and Y) for the top-level wall and each screen according to the dimensions (height, width and bezel) defined in the individual screen config blocks. In theory, this simplifies the configuration workflow because it prevents the developer from having to make changes in multiple places when making modifications or adding new screens.
 
 There are still some issues to be worked out around dynamic layout:
 
@@ -73,6 +73,7 @@ name = "custom-wall"
 
 ## Usage
 ### Build
+This project is known to build on recent 64-bit versions of x86 and ARM Linux.
 ```
 cargo build
 ```
