@@ -89,3 +89,17 @@ cargo build
 ```
 
 ## Future Work
+
+### Support multiple rows
+Documented above
+
+### Start command
+It would be very useful if this project exposed a "start" command (among other system management commands ...) which would allow users to "start" a PiWall instance using a single command. It seems like this is conventionally done manually using SSH and I've had success using tmux/tmuxinator -- more on that below.
+
+This workflow would likely look something like:
+- SSH into clients and start listeners via pwomxplayer and any necessary / contextual (e.g. ID) flags
+- SSH into server and start broadcast once clients are online and listening (broke: sleep; woke: message broker?)
+
+As mentioned above, I've experimented with using tmuxinator for this purpose and it's worked really well. It does currently require the user to manually keep the tmuxinator config in sync with their PiWall setup but it could be possible to either dynamically create a tmuxinator config file or use a simple, common tmuxinator config file which accepts arguments and renders them using ERB. This option is also nice because tmux/tmuxinator exposes hooks which can be leveraged to handle any setup or teardown which may be required by the server or clients. I will include a link to a sample tmuxinator config file which can be used for this purpose.
+
+One potential alternative which, IMO, could be very slick is to use my rmuxinator project as a library and dynamically start and configure a tmux session. This would be ideal because it would require fewer external dependencies (Ruby and tmuxinator) and could be managed via this project's Cargo config. This needs more thought and experimentation, though.
