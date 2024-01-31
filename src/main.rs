@@ -19,8 +19,8 @@ where
     I: IntoIterator<Item = T>,
     T: Into<OsString> + Clone,
 {
-    let project_config_file_arg = Arg::with_name("PROJECT_CONFIG_FILE")
-        .help("The path to the project config file")
+    let pi_wall_meta_config_file_arg = Arg::with_name("PI_WALL_META_CONFIG_FILE")
+        .help("The path to the PiWall meta config file")
         .required(true);
     let app_matches = App::new(clap::crate_name!())
         .version(clap::crate_version!())
@@ -29,18 +29,18 @@ where
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(
             SubCommand::with_name("copy-config-to-clients")
-                .about("Copy piwall config to clients using toml")
-                .arg(&project_config_file_arg),
+                .about("Copy .piwall and .pitile to clients")
+                .arg(&pi_wall_meta_config_file_arg),
         )
         .subcommand(
             SubCommand::with_name("generate")
-                .about("Generate a piwall config using toml")
-                .arg(&project_config_file_arg),
+                .about("Generate .piwall using meta config file")
+                .arg(&pi_wall_meta_config_file_arg),
         )
         .subcommand(
             SubCommand::with_name("start")
-                .about("Start a tmux session using a path to a project config file")
-                .arg(&project_config_file_arg),
+                .about("UNIMPLEMENTED")
+                .arg(&pi_wall_meta_config_file_arg),
         )
         .get_matches_from(args);
 
@@ -59,8 +59,8 @@ where
     };
 
     let project_name = command_matches
-        .value_of("PROJECT_CONFIG_FILE")
-        .expect("project file is required by clap")
+        .value_of("PI_WALL_META_CONFIG_FILE")
+        .expect("PiWall meta config file is required.")
         .to_string();
 
     CliArgs {
@@ -338,6 +338,7 @@ fn main() -> Result<(), String> {
     let cli_args = parse_args(env::args_os());
     let config = parse_config_file(&cli_args.project_name);
 
+    // TODO: Handle gracefully and return a useful error message.
     assert_eq!(config.is_ok(), true);
     let config_ = config.unwrap();
 
