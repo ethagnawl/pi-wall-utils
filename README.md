@@ -10,15 +10,16 @@ There are a number of complimentary subcommands exposed by the pi-wall-utils CLI
 
 In my research, I was not able to find a common workflow which didn't involve lots of manual calculations (i.e. in the case of .piwall) or copying of files between machines using SCP (at best), FTP, USB thumbdrives (at worst), etc. for .piwall and .pitile config files.
 
-## Status
-### Nomenclature
+## Nomenclature
 This project and its documentation will use the following names to refer to the system's components:
 
-#### Server
+### Server
 The machine which will be broadcasting content via avconv (deprecated), ffmpeg, OBS, etc. This may or may not be a Raspberry Pi.
 
-#### Client
+### Client
 The Raspberry Pi(s) which will be displaying the content via pwomxplayer.
+
+## Status
 
 ### Generate
 The meta config file is capable of being used to dynamically generate valid .piwall and .pitile config files.
