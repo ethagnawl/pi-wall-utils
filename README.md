@@ -11,6 +11,15 @@ There are a number of complimentary subcommands exposed by the pi-wall-utils CLI
 In my research, I was not able to find a common workflow which didn't involve lots of manual calculations (i.e. in the case of .piwall) or copying of files between machines using SCP (at best), FTP, USB thumbdrives (at worst), etc. for .piwall and .pitile config files.
 
 ## Status
+### Nomenclature
+This project and its documentation will use the following names to refer to the system's components:
+
+#### Server
+The machine which will be broadcasting content via avconv (deprecated), ffmpeg, OBS, etc. This may or may not be a Raspberry Pi.
+
+#### Client
+The Raspberry Pi(s) which will be displaying the content via pwomxplayer.
+
 ### Generate
 The meta config file is capable of being used to dynamically generate valid .piwall and .pitile config files.
 
@@ -28,7 +37,11 @@ The dynamic layout provided by this project only currently supports a single row
 The generated .piwall uses explicit IDs and a config block to map client devices via their .pitile config files. This is in part because I think being explicit is preferential but also because I couldn't get dynamic hostname mapping working.
 
 ### Copy Configs
-The copy config functionality is fully functional and uses SCP to distribute the files to client devices -- one common .piwall and custom .pitile each. This setup does use some conventions / make some assumptions about machine connectivitity which will be documented and potentially enhanced in the future. For example, the copy routine assumes that the client is available via an SSH alias (i.e. in ~/.ssh/config) which matches the screen's ID field in the meta config file. This workflow could be improved my making the user, hostname/IP, keyfile, etc. configurable via the meta config file. It might also be possible to support using prompted passwords but, IMO, that would be a step backwards toward a more manual workflow.
+The copy config functionality is fully functional and uses SCP to distribute the files to client devices -- one common .piwall and custom .pitile each.
+
+This setup does use some conventions / make some assumptions about machine connectivitity which will be documented and potentially enhanced in the future. For example, the copy routine assumes that the client is available via an SSH alias which matches the screen's ID field in the meta config file. It also assumes the machines are pre-configured with passwordless logins (i.e. using pre-shared public keys). This workflow could be improved my making the user, hostname/IP, keyfile, etc. configurable via the meta config file. It might also be possible to support using prompted passwords but, IMO, that would be a step backwards toward a more manual workflow.
+
+The workflow also assumes that it's being run on the server instance and does not copy the generated .piwall to the server. I don't think this is technically a problem, as the server doesn't require the .piwall config file but I will verify this next time I bring my PiWall back online.
 
 ## Meta Config
 
