@@ -93,7 +93,9 @@ cargo build
 ### Generate
 #### Parameterize output path
 #### Support multiple rows
-Documented above
+#### Support different alignments
+#### Support dynamic overscan
+#### Support dynamic overlap (i.e. custom arrangements)
 
 ### Copy Configs
 #### Parameterize .piwall path
