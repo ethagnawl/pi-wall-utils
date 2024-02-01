@@ -113,4 +113,5 @@ One potential alternative which, IMO, could be very slick is to use my rmuxinato
 ## Resources
 - https://matthewepler.github.io/2016/01/05/piwall.html
 - https://crt.gg/piwall
+- https://github.com/Edinburgh-College-of-Art/piwall-setup?tab=readme-ov-file
 - https://piwall.co.uk/
