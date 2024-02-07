@@ -253,6 +253,7 @@ fn generate_piwall_config(config: &Config, output_path: Option<&str>) {
     let mut wall_height = 0.0;
     // TODO: is this correct? should be bezel+width + bezel+width for each screen in row
     let mut wall_width = 0.0;
+    let mut row_heights: Vec<f32> = Vec::new();
 
     for row in config.rows.iter() {
         let mut row_height = 0.0;
@@ -270,7 +271,8 @@ fn generate_piwall_config(config: &Config, output_path: Option<&str>) {
             wall_width = row_width
         }
 
-        wall_height += row_height
+        wall_height += row_height;
+        row_heights.push(row_height)
     }
 
     let mut conf = Ini::new();
@@ -282,20 +284,22 @@ fn generate_piwall_config(config: &Config, output_path: Option<&str>) {
         .set("x", "0")
         .set("y", "0");
 
-    for row in config.rows.iter() {
+    for (i, row) in config.rows.iter().enumerate() {
         let mut offset = 0.0;
         for (ii, screen) in row.screens.iter().enumerate() {
-            let offset_ = if ii == 0 { 0.0 } else { offset + screen.bezel };
+            let x = if ii == 0 { 0.0 } else { offset + screen.bezel };
+            let y: f32 = if i == 0 {
+                0.0
+            } else {
+                row_heights[0..i].to_vec().iter().sum()
+            };
             conf.with_section(Some(screen.id.clone()))
                 .set("height", screen.height.to_string())
                 .set("wall", wall_id.clone())
                 .set("width", screen.width.to_string())
-                .set("x", offset_.to_string())
-                // TODO: compute using previous row height
-                // how should row height be computed? min? max? should it
-                // become a field?
-                .set("y", "0");
-            offset += offset_ + screen.width + screen.bezel
+                .set("x", x.to_string())
+                .set("y", y.to_string());
+            offset += x + screen.width + screen.bezel
         }
     }
 

@@ -92,7 +92,6 @@ cargo build
 
 ### Generate
 #### Parameterize output path
-#### Support multiple rows
 #### Support different alignments
 #### Support dynamic overscan
 #### Support dynamic overlap (i.e. custom arrangements)

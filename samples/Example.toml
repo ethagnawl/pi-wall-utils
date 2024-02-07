@@ -12,3 +12,15 @@ name = "custom-wall"
     height = 16.5
     id = "pi-wall-tv-2"
     width = 22.25
+
+[[rows]]
+  [[rows.screens]]
+    bezel = 1
+    height = 22
+    id = "pi-wall-tv-3"
+    width = 22
+  [[rows.screens]]
+    bezel = 1
+    height = 22
+    id = "pi-wall-tv-4"
+    width = 22
