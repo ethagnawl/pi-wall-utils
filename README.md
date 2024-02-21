@@ -23,7 +23,7 @@ The Raspberry Pi(s) which will be displaying the content via pwomxplayer.
 ## Status
 
 ### Generate
-The meta config file is capable of being used to dynamically generate .piwall config files.
+The meta config file is capable of being used to dynamically generate functional .piwall config files -- caveats follow.
 
 It calculates the height, width and offsets (X and Y) for the top-level wall and each screen according to the dimensions (height, width and bezel) defined in the individual screen config blocks. In theory, this simplifies the configuration workflow because it prevents the developer from having to make changes in multiple places when making modifications or adding new screens.
 
@@ -36,14 +36,14 @@ I have yet to find comprehensive documentation on "bezel compensation" and it's 
 The dynamic layout provided by this project only currently supports naive calculations for multiple rows -- top and bottom bezels are not currently accounted for. Properly supporting multiple rows is possible and will probably be addressed in the future. The one slightly complicating factor is that the meta config will need to be made to support dimensions for the top, right, bottom and left bezels because, while the sides are often even, the top and bottom rarely are.
 
 #### IDs
-The generated .piwall uses explicit IDs and a config block to map client devices via their .pitile config files. This is in part because I think being explicit is preferential but also because I couldn't get dynamic hostname mapping working.
+The generated .piwall uses explicit IDs and a config block to reference client devices via their .pitile config files. This is in part because I think being explicit is preferential but also because I couldn't get dynamic hostname mapping working. These IDs are also assumed to be the hostname of the machine and the name of the associated SSH alias (documented below). Personally, I don't think this is a shortcoming but I wanted to make sure it was called out explicitly.
 
 ### Copy Configs
-The copy config functionality is fully functional and uses SCP to distribute the files to client devices -- one common .piwall and custom .pitile each.
+The copy config functionality is fully functional and uses SCP to distribute the files to client devices -- one common .piwall and custom .pitile (using the associated ID config field) each screen.
 
 This setup does use some conventions / make some assumptions about machine connectivity which will be documented and potentially enhanced in the future. For example, the copy routine assumes that the client is available via an SSH alias which matches the screen's ID field in the meta config file. It also assumes the machines are pre-configured with passwordless logins (i.e. using pre-shared keys). This workflow could be improved my making the user, hostname/IP, keyfile, etc. configurable via the meta config file. It might also be possible to support using prompted passwords but, IMO, that would be a step backwards toward a more manual workflow.
 
-The workflow also assumes that it's being run on the server instance and does not copy the generated .piwall to the server. I don't think this is technically a problem, as the server doesn't require the .piwall config file but I will verify this next time I bring my PiWall back online.
+The workflow also assumes that it's being run on the server instance and does not copy the generated .piwall to the server. However, I don't think this is a strict requirement, because the server doesn't require the .piwall config file but I will verify this next time I bring my PiWall back online.
 
 ### Provision Client
 This command runs a Bash script which provisions a Pi to be used as a PiWall client. The machine is assumed to be running Debian 10. It takes arguments for a hostname and IP and does the following:
@@ -147,7 +147,11 @@ As mentioned above, I've experimented with using tmuxinator for this purpose and
 
 One potential alternative which, IMO, could be very slick is to use my rmuxinator project as a library and dynamically start and configure a tmux session. This would be ideal because it would require fewer external dependencies (Ruby and tmuxinator) and could be managed via this project's Cargo config. This needs more thought and experimentation, though.
 
+### The Future
+- First off, the PiWall project is tremendously useful and I greatly thank the devs for sharing it with the world. However, while this setup does work, it relies on outdated versions of operating systems and libraries; the clients use a non-standard media player; its documentation leaves a lot to be desired; it's difficult to debug. (The Google group and blog posts linked below are required reading for anyone looking to set up a wall of their own.) All told, the PiWall project is 10+ years old and the ecosystem feels ... creaky. I have been wondering if this need could be better served by using modern utilities like WebRTC/RTMP and VLC. I would like to spend some time experimenting with alternatives and report back.
+
 ## Resources
+- https://groups.google.com/u/1/g/piwall-users
 - https://matthewepler.github.io/2016/01/05/piwall.html
 - https://crt.gg/piwall
 - https://github.com/Edinburgh-College-of-Art/piwall-setup?tab=readme-ov-file
