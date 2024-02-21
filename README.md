@@ -4,7 +4,7 @@
     <tbody>
         <tr align="center">
             <td>
-                <img src="https://raw.githubusercontent.com/ethagnawl/pi-wall-utils/main/.github/images/demo.gif" alt="Screenshot" width="80%" />
+                <img src="https://raw.githubusercontent.com/ethagnawl/pi-wall-utils/main/.github/images/pi-wall-utils-demo-short.gif" alt="Screenshot" width="80%" />
             </td>
         </tr>
     </tbody>
