@@ -1,5 +1,16 @@
 # pi-wall-utils
 
+<table>
+    <tbody>
+        <tr align="center">
+            <td>
+                <img src="https://raw.githubusercontent.com/ethagnawl/pi-wall-utils/main/.github/images/demo.gif" alt="Screenshot" width="80%" />
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
 ## Summary
 
 This project is an attempt at smoothing out some of the rough edges encountered when working with an experimental PiWall setup.
