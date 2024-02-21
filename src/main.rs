@@ -19,9 +19,19 @@ where
     I: IntoIterator<Item = T>,
     T: Into<OsString> + Clone,
 {
+    // TODO: use named args throughout
     let pi_wall_meta_config_file_arg = Arg::with_name("PI_WALL_META_CONFIG_FILE")
         .help("The path to the PiWall meta config file")
         .required(true);
+
+    let provision_ip_arg = Arg::with_name("PI_WALL_IP_ARG")
+        .help("The static IP to use when provisioning Pi-Wall client.")
+        .required(false);
+
+    let provision_hostname_arg = Arg::with_name("PI_WALL_HOSTNAME_ARG")
+        .help("The hostname to use when provisioning Pi-Wall client.")
+        .required(false);
+
     let app_matches = App::new(clap::crate_name!())
         .version(clap::crate_version!())
         .author(clap::crate_authors!())
@@ -36,6 +46,12 @@ where
             SubCommand::with_name("generate")
                 .about("Generate .piwall using meta config file")
                 .arg(&pi_wall_meta_config_file_arg),
+        )
+        .subcommand(
+            SubCommand::with_name("provision-client")
+                .about("Provision client device.")
+                .arg(&provision_ip_arg)
+                .arg(&provision_hostname_arg),
         )
         .subcommand(
             SubCommand::with_name("start")
@@ -57,15 +73,31 @@ where
             panic!("{}", error.to_string());
         }
     };
+    println!("command_matches: {:#?}", command_matches);
 
-    let project_name = command_matches
-        .value_of("PI_WALL_META_CONFIG_FILE")
-        .expect("PiWall meta config file is required.")
-        .to_string();
+    let pi_wall_meta_config_file_path_ = command_matches.value_of("PI_WALL_META_CONFIG_FILE");
+    let pi_wall_meta_config_file_path = match pi_wall_meta_config_file_path_ {
+        None => None,
+        Some(pi_wall_meta_config_file_path) => Some(pi_wall_meta_config_file_path.to_string()),
+    };
+
+    let pi_wall_ip_arg_ = command_matches.value_of("PI_WALL_IP_ARG");
+    let pi_wall_ip_arg = match pi_wall_ip_arg_ {
+        None => None,
+        Some(pi_wall_ip_arg) => Some(pi_wall_ip_arg.to_string()),
+    };
+
+    let pi_wall_hostname_arg_ = command_matches.value_of("PI_WALL_HOSTNAME_ARG");
+    let pi_wall_hostname_arg = match pi_wall_hostname_arg_ {
+        None => None,
+        Some(pi_wall_hostname_arg) => Some(pi_wall_hostname_arg.to_string()),
+    };
 
     CliArgs {
         command,
-        project_name,
+        pi_wall_ip_arg,
+        pi_wall_hostname_arg,
+        pi_wall_meta_config_file_path,
     }
 }
 
@@ -73,6 +105,7 @@ where
 pub enum CliCommand {
     CopyConfigToClients,
     Generate,
+    ProvisionPiWallClient,
     Start,
 }
 
@@ -98,6 +131,7 @@ impl FromStr for CliCommand {
             "copy-config-to-clients" => Ok(Self::CopyConfigToClients),
             "generate" => Ok(Self::Generate),
             "start" => Ok(Self::Start),
+            "provision-client" => Ok(Self::ProvisionPiWallClient),
             // This should only ever be reached if subcommands are added to
             // clap and not here
             _ => Err(ParseCliCommandError),
@@ -108,7 +142,9 @@ impl FromStr for CliCommand {
 #[derive(Debug, PartialEq)]
 pub struct CliArgs {
     pub command: CliCommand,
-    pub project_name: String,
+    pub pi_wall_meta_config_file_path: Option<String>,
+    pub pi_wall_hostname_arg: Option<String>,
+    pub pi_wall_ip_arg: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -338,27 +374,68 @@ fn start(_config: &Config) {
     println!("start fn has not been implemented.");
 }
 
+fn provision_pi_wall_client(hostname: &str, ip: &str) -> Result<(), String> {
+    // println!("provision_pi_wall_client");
+    // println!("hostname: {:#?}", hostname);
+    // println!("ip: {:#?}", ip);
+
+    // TODO: this is a hogefest; what is the best way to either inline this
+    // script on bundle it with the executable?
+    let output = Command::new("~/scripts/provision-pi-wall-client.sh")
+        .args([hostname.clone(), ip.clone()])
+        .output()
+        .expect("Failed to execute script");
+    println!("provision-pi-wall-client output: {:#?}", output);
+    Ok(())
+}
+
 fn main() -> Result<(), String> {
     let cli_args = parse_args(env::args_os());
-    let config = parse_config_file(&cli_args.project_name);
+    println!("cli_args: {:#?}", cli_args);
 
-    // TODO: Handle gracefully and return a useful error message.
-    assert_eq!(config.is_ok(), true);
-    let config_ = config.unwrap();
-
+    // TODO: uniform return values from dispatched fns
     match cli_args.command {
+        // TODO: group cmds requiring config?
         CliCommand::Generate => {
+            let config = parse_config_file(
+                &cli_args
+                    .pi_wall_meta_config_file_path
+                    .expect("Pi-Wall meta config file path is required"),
+            );
             // TODO: move output_path into clap config and define default (.piwall)
             // TODO: .map_err(|error| format!("Application error: {}", error)),
+            // TODO: Handle gracefully and return a useful error message.
+            assert_eq!(config.is_ok(), true);
+            let config_ = config.unwrap();
             generate_piwall_config(&config_, Some(".piwall"));
             Ok(())
         }
         CliCommand::CopyConfigToClients => {
+            let config = parse_config_file(
+                &cli_args
+                    .pi_wall_meta_config_file_path
+                    .expect("Pi-Wall meta config file path is required"),
+            );
             // TODO: move input_path into clap config and define default (.piwall)
+            assert_eq!(config.is_ok(), true);
+            let config_ = config.unwrap();
             copy_configs_to_clients(&config_)
                 .map_err(|error| format!("CopyConfigToClients error: {}", error))
         }
+        CliCommand::ProvisionPiWallClient => {
+            let pi_wall_client_ip = cli_args.pi_wall_hostname_arg.expect("hostname required");
+            let pi_wall_client_hostname = cli_args.pi_wall_ip_arg.expect("ip required");
+            let _x = provision_pi_wall_client(&pi_wall_client_hostname, &pi_wall_client_ip);
+            Ok(())
+        }
         CliCommand::Start => {
+            let config = parse_config_file(
+                &cli_args
+                    .pi_wall_meta_config_file_path
+                    .expect("Pi-Wall meta config file path is required"),
+            );
+            assert_eq!(config.is_ok(), true);
+            let config_ = config.unwrap();
             start(&config_);
             Ok(())
         }
