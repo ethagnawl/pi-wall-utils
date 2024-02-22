@@ -166,6 +166,7 @@ cargo build
 
 ### Provision
 #### Figure out how to distribute Bash script or inline contents
+#### Parameterize router IP
 
 ### Start command
 It would be very useful if this project exposed a "start" command (among other system management commands ...) which would allow users to "start" a PiWall instance using a single command. It seems like this is conventionally done manually using SSH and I've had success using tmux/tmuxinator -- more on that below.
