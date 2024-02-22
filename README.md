@@ -95,6 +95,25 @@ name = "custom-wall"
 ```
 
 ### Fields
+#### Name
+The name of the wall to be used by the PiWall library.
+
+### Rows
+The collection of rows used in the wall (should be >=1).
+
+### Screens
+The config blocks for invividual screens/clients (should be >=1).
+
+#### Bezel
+The width of the screen's bezel (currently only left/right) to use when calculating row widths and horizontal offsets of sibling clients.
+
+#### Height
+The height of the screen which is used to compute sibling rows' vertical offsets.
+
+#### ID
+A unique identifier used to:
+- map config entries to individual clients
+- used as an SSH alias when copying .piwall to clients
 
 ## Commands
 ### Generate
