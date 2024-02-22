@@ -33,6 +33,8 @@ The Raspberry Pi(s) which will be displaying the content via pwomxplayer.
 
 ## Status
 
+This project worked to facilitate my experimental CRT and Pi Zero wall but it may not work for anyone else's purposes. It is still very much WIP.
+
 ### Generate
 The meta config file is capable of being used to dynamically generate functional .piwall config files -- caveats follow.
 
