@@ -19,6 +19,7 @@ There are a number of complimentary subcommands exposed by the pi-wall-utils CLI
 - dynamically creating .piwall and config files using a (new) meta config file format
 - distributing config files to client devices (this operation also creates the appropriate .pitiles on the client machines)
 - provisioning a new PiWall client
+- starting a PiWall session
 
 In my (cursory) research, I was not able to find a common workflow which didn't involve lots of manual calculations (i.e. in the case of .piwall) or copying of files between machines using SCP (at best) or USB drives (at worst) for .piwall and .pitile config files. This is also a good excuse for me to re-familiarize myself with Rust CLI applications.
 
@@ -184,6 +185,8 @@ cargo build [--features rmuxinator]
 I've made a first pass at using rmuxinator as an optional dependency (i.e. compile-time feature) and `start` command now accepts a path to an existing rmuxinator config file. This is fine but it still puts the burden on the user to craft a well-formed config file and, at that point, why not just use tmuxinator/rmuxinator/whatever else directly? It'd be _super slick_ if `start` dynamically generated a suitable rmuxinator config file -- using the pi-wall-utils meta config file -- for use by rmuxinator.
 
 If nothing else, this was a good excuse for me to learn more about Rust's compile-time features. It's also the first time I'm using one of my own libraries as a dependency. Because I'd initially used Cargo's `lib` flag when creating rmuxinator, it wound up very simple to use it as a library from within this application. All I had to do was mimic the behavior of rmuxinator's main entrypoint.
+
+It'd also make sense to provide a way to manage the PiWall "session" spawned by the start command: stop, restart, etc. This could be potentially be done using a combination of tmux hooks and IPC.
 
 ### The Future
 - First off, the PiWall project is tremendously useful and I greatly thank the devs for sharing it with the world. However, while this setup does work, it relies on outdated versions of operating systems and libraries; the clients use a non-standard media player; its documentation leaves a lot to be desired; it's difficult to debug. (The Google group and blog posts linked below are required reading for anyone looking to set up a wall of their own.) All told, the PiWall project is 10+ years old and the ecosystem feels ... creaky. I have been wondering if this need could be better served by using modern utilities like WebRTC/RTMP and VLC. I would like to spend some time experimenting with alternatives and report back.
