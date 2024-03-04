@@ -149,6 +149,11 @@ cargo build [--features rmuxinator]
 /path/to/pi-wall-gen provision 192.168.1.111 pi-wall-tv-1
 ```
 
+### Start
+```
+/path/to/pi-wall-gen start /path/to/some-rmuxinator.toml
+```
+
 ## Future Work
 
 ### Releases
