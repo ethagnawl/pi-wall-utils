@@ -74,6 +74,12 @@ Notes:
 - The machine will need to be rebooted after this script runs. I'd initially had the script do this and that makes sense when the script is run on its own but feels weird when it's executed from within the context of this utility library.
 - The script also initially downloaded a test video and used it to launch pwomxplayer as a smoke test but that also doesn't make a lot of sense when it's run from this utility library.
 
+### Start
+The start command allows the user to provide a path to an [rmuxinator](https://github.com/ethagnawl/rmuxinator) config file and will use it to launch a tmux session -- trusting it to do whatever is required by the user's setup to start a PiWall installation. This current implementation is a bit half baked and is sort of an unnecessary convenience. It will likely change in the future. See the "Future Work" section below for more details.
+
+Notes:
+- rmuxinator use assumes the user has built pi-wall-utils using the `--features rmuxinator` flag or that they're running a release which has included the optional rmuxinator dependency. If rmuxinator is not available, the `start` command will NOOP.
+
 ## Meta Config
 
 Sample:
@@ -119,12 +125,13 @@ A unique identifier used to:
 ### Generate
 ### Copy Configs
 ### Provision
+### Start
 
 ## Usage
 ### Build
 This project is known to build on recent 64-bit versions of x86 and ARM Linux.
 ```
-cargo build
+cargo build [--features rmuxinator]
 ```
 
 ### Generate
@@ -169,15 +176,9 @@ cargo build
 #### Parameterize router IP
 
 ### Start command
-It would be very useful if this project exposed a "start" command (among other system management commands ...) which would allow users to "start" a PiWall instance using a single command. It seems like this is conventionally done manually using SSH and I've had success using tmux/tmuxinator -- more on that below.
+I've made a first pass at using rmuxinator as an optional dependency (i.e. compile-time feature) and `start` command now accepts a path to an existing rmuxinator config file. This is fine but it still puts the burden on the user to craft a well-formed config file and, at that point, why not just use tmuxinator/rmuxinator/whatever else directly? It'd be _super slick_ if `start` dynamically generated a suitable rmuxinator config file -- using the pi-wall-utils meta config file -- for use by rmuxinator.
 
-This workflow would likely look something like:
-- SSH into clients and start listeners via pwomxplayer and any necessary / contextual (e.g. ID) flags
-- SSH into server and start broadcast once clients are online and listening (broke: sleep; woke: message broker?)
-
-As mentioned above, I've experimented with using tmuxinator for this purpose and it's worked really well. It does currently require the user to manually keep the tmuxinator config in sync with their PiWall setup but it could be possible to either dynamically create a tmuxinator config file or use a simple, common tmuxinator config file which accepts arguments and renders them using ERB. This option is also nice because tmux/tmuxinator exposes hooks which can be leveraged to handle any setup or teardown which may be required by the server or clients. I will include a link to a sample tmuxinator config file which can be used for this purpose.
-
-One potential alternative which, IMO, could be very slick is to use my rmuxinator project as a library and dynamically start and configure a tmux session. This would be ideal because it would require fewer external dependencies (Ruby and tmuxinator) and could be managed via this project's Cargo config. This needs more thought and experimentation, though.
+If nothing else, this was a good excuse for me to learn more about Rust's compile-time features. It's also the first time I'm using one of my own libraries as a dependency. Because I'd initially used Cargo's `lib` flag when creating rmuxinator, it wound up very simple to use it as a library from within this application. All I had to do was mimic the behavior of rmuxinator's main entrypoint.
 
 ### The Future
 - First off, the PiWall project is tremendously useful and I greatly thank the devs for sharing it with the world. However, while this setup does work, it relies on outdated versions of operating systems and libraries; the clients use a non-standard media player; its documentation leaves a lot to be desired; it's difficult to debug. (The Google group and blog posts linked below are required reading for anyone looking to set up a wall of their own.) All told, the PiWall project is 10+ years old and the ecosystem feels ... creaky. I have been wondering if this need could be better served by using modern utilities like WebRTC/RTMP and VLC. I would like to spend some time experimenting with alternatives and report back.

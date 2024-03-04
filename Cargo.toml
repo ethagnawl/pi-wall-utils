@@ -11,3 +11,4 @@ rust-ini = "0.19"
 serde = { version = "1.0", features = ["derive"] }
 tempfile = "3"
 toml = "0.4"
+rmuxinator = {version = "0.1.0", optional = true}

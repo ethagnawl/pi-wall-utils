@@ -12,6 +12,9 @@ use std::process::Command;
 use std::str::FromStr;
 use tempfile::NamedTempFile;
 
+#[cfg(feature = "rmuxinator")]
+extern crate rmuxinator;
+
 extern crate toml;
 
 pub fn parse_args<I, T>(args: I) -> CliArgs
@@ -30,6 +33,10 @@ where
 
     let provision_hostname_arg = Arg::with_name("PI_WALL_HOSTNAME_ARG")
         .help("The hostname to use when provisioning Pi-Wall client.")
+        .required(false);
+
+    let rmuxinator_config_arg = Arg::with_name("RMUXINATOR_CONFIG_ARG")
+        .help("Path to the rmuxinator config file used by the `start` command.")
         .required(false);
 
     let app_matches = App::new(clap::crate_name!())
@@ -55,8 +62,8 @@ where
         )
         .subcommand(
             SubCommand::with_name("start")
-                .about("UNIMPLEMENTED")
-                .arg(&pi_wall_meta_config_file_arg),
+                .about("Start rmuxinator session using the provided config file path.")
+                .arg(&rmuxinator_config_arg),
         )
         .get_matches_from(args);
 
@@ -93,11 +100,18 @@ where
         Some(pi_wall_hostname_arg) => Some(pi_wall_hostname_arg.to_string()),
     };
 
+    let rmuxinator_config_arg_ = command_matches.value_of("RMUXINATOR_CONFIG_ARG");
+    let rmuxinator_config_arg = match rmuxinator_config_arg_ {
+        None => None,
+        Some(rmuxinator_config_arg) => Some(rmuxinator_config_arg.to_string()),
+    };
+
     CliArgs {
         command,
         pi_wall_ip_arg,
         pi_wall_hostname_arg,
         pi_wall_meta_config_file_path,
+        rmuxinator_config_arg,
     }
 }
 
@@ -145,6 +159,7 @@ pub struct CliArgs {
     pub pi_wall_meta_config_file_path: Option<String>,
     pub pi_wall_hostname_arg: Option<String>,
     pub pi_wall_ip_arg: Option<String>,
+    pub rmuxinator_config_arg: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -359,21 +374,30 @@ fn generate_piwall_config(config: &Config, output_path: Option<&str>) {
     println!("wrote piwall config to: {:#?}", output_path_);
 }
 
-fn start(_config: &Config) {
-    // TODO: everything!
-    // presumably this would:
-    // - ssh into the clients and start the listeners
-    // - ssh into the controller and start the broadcast
-    //   -- what if it's being run on the controller?
-    // is this a good idea? is there a clean way of managing the various
-    // sessions? i was previously using tmuxinator to do this and it worked
-    // very nicely, so maybe we could use rmuxinator as a library to achieve
-    // a similar workflow? that prevents this application from having to do
-    // anything clever but introduces another dependency, assumes folks are
-    // familiar with tmux, etc..
-    println!("start fn has not been implemented.");
+#[cfg(feature = "rmuxinator")]
+fn start(cli_arg: String) -> Result<(), String> {
+    // TODO: make call to rmuxinator in uniform fashion.
+    // TODO: what should the params to this fn be? the cli args or the
+
+    println!("rmuxinator has been included as an optional dependency");
+
+    let args = rmuxinator::CliArgs {
+        command: rmuxinator::CliCommand::Start,
+        project_name: cli_arg,
+    };
+
+    let config = rmuxinator::Config::new(&args)
+        .map_err(|error| format!("Problem parsing config file: {}", error))?;
+
+    rmuxinator::run_start(config).map_err(|error| format!("Application error: {}", error))
 }
 
+#[cfg(not(feature = "rmuxinator"))]
+fn start(_cli_arg: String) -> Result<(), String> {
+    println!("rmuxinator has not been included as an optional dependency; NOOP");
+    // TODO: Should this be an Err?
+    Ok(())
+}
 fn provision_pi_wall_client(hostname: &str, ip: &str) -> Result<(), String> {
     // println!("provision_pi_wall_client");
     // println!("hostname: {:#?}", hostname);
@@ -429,14 +453,10 @@ fn main() -> Result<(), String> {
             Ok(())
         }
         CliCommand::Start => {
-            let config = parse_config_file(
-                &cli_args
-                    .pi_wall_meta_config_file_path
-                    .expect("Pi-Wall meta config file path is required"),
-            );
-            assert_eq!(config.is_ok(), true);
-            let config_ = config.unwrap();
-            start(&config_);
+            let rmuxinator_config_arg = cli_args
+                .rmuxinator_config_arg
+                .expect("rmuxinator config path is required");
+            let _result = start(rmuxinator_config_arg);
             Ok(())
         }
     }
