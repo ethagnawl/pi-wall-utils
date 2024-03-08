@@ -2,15 +2,18 @@ use clap::Arg;
 use clap::{App, AppSettings, SubCommand};
 use ini::Ini;
 use serde::Deserialize;
+use serde::Serialize;
 use std::env;
 use std::error::Error;
 use std::ffi::OsString;
 use std::fmt;
 use std::fs::File;
 use std::io::Read;
+use std::io::Write;
 use std::process::Command;
 use std::str::FromStr;
 use tempfile::NamedTempFile;
+use toml::to_string;
 
 #[cfg(feature = "rmuxinator")]
 extern crate rmuxinator;
@@ -389,6 +392,8 @@ fn start(cli_arg: String) -> Result<(), String> {
     let config = rmuxinator::Config::new(&args)
         .map_err(|error| format!("Problem parsing config file: {}", error))?;
 
+    println!("debug config: {:#?}", config);
+
     rmuxinator::run_start(config).map_err(|error| format!("Application error: {}", error))
 }
 
@@ -453,10 +458,51 @@ fn main() -> Result<(), String> {
             Ok(())
         }
         CliCommand::Start => {
-            let rmuxinator_config_arg = cli_args
-                .rmuxinator_config_arg
-                .expect("rmuxinator config path is required");
-            let _result = start(rmuxinator_config_arg);
+            #[derive(Serialize)]
+            struct RmuxinatorConfig {
+                start_directory: String,
+                name: String,
+            }
+
+            let config = RmuxinatorConfig {
+                name: String::from("pi-wall"),
+                start_directory: String::from("/home/peter"),
+            };
+
+            let new_config = rmuxinator::Config {
+                pane_name_user_option: None,
+                layout: None,
+                name: String::from("pi-wall"),
+                start_directory: Some(String::from("/home/peter")),
+                hooks: vec![],
+                windows: vec![rmuxinator::Window {
+                    name: None,
+                    layout: None,
+                    start_directory: None,
+                    panes: vec![rmuxinator::Pane {
+                        name: None,
+                        commands: vec![String::from("echo 'it works'")],
+                        start_directory: None,
+                    }],
+                }],
+            };
+            println!("debug new_config: {:#?}", new_config);
+
+            let toml_string = to_string(&new_config)
+                .map_err(|error| format!("CopyConfigToClients error: {}", error));
+
+            let mut file = File::create(String::from("Rmuxinator.toml"))
+                .map_err(|error| format!("CopyConfigToClients error: {}", error))
+                .unwrap();
+
+            let _x = file
+                .write_all(toml_string.unwrap().as_bytes())
+                .map_err(|error| format!("CopyConfigToClients error: {}", error));
+
+            // let _rmuxinator_config_arg = cli_args
+            //     .rmuxinator_config_arg
+            //     .expect("rmuxinator config path is required");
+            let _result = start(String::from("Rmuxinator.toml"));
             Ok(())
         }
     }

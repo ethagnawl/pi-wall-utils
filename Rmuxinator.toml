@@ -1,0 +1,7 @@
+hooks = []
+name = "pi-wall"
+start_directory = "/home/peter"
+
+[[windows]]
+[[windows.panes]]
+commands = ["echo 'it works'"]
