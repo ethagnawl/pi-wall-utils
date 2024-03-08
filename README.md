@@ -137,12 +137,12 @@ cargo build [--features rmuxinator]
 
 ### Generate
 ```
-/path/to/pi-wall-gen generate Example.toml
+/path/to/pi-wall-gen generate samples/Example.toml
 ```
 
 ### Copy Configs
 ```
-/path/to/pi-wall-gen copy-config-to-clients Example.toml
+/path/to/pi-wall-gen copy-config-to-clients samples/Example.toml
 ```
 
 ### Provision
@@ -152,7 +152,7 @@ cargo build [--features rmuxinator]
 
 ### Start
 ```
-/path/to/pi-wall-gen start /path/to/some-rmuxinator.toml
+/path/to/pi-wall-gen start samples/Rmuxinator.toml
 ```
 
 ## Future Work
