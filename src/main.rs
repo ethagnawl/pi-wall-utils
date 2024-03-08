@@ -2,14 +2,12 @@ use clap::Arg;
 use clap::{App, AppSettings, SubCommand};
 use ini::Ini;
 use serde::Deserialize;
-use serde::Serialize;
 use std::env;
 use std::error::Error;
 use std::ffi::OsString;
 use std::fmt;
 use std::fs::File;
-use std::io::Read;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::process::Command;
 use std::str::FromStr;
 use tempfile::NamedTempFile;
@@ -458,51 +456,77 @@ fn main() -> Result<(), String> {
             Ok(())
         }
         CliCommand::Start => {
-            #[derive(Serialize)]
-            struct RmuxinatorConfig {
-                start_directory: String,
-                name: String,
+            let _rmuxinator_config_arg = cli_args
+                .rmuxinator_config_arg
+                .expect("rmuxinator config path is required");
+
+            // TODO: parameterize
+            let rmuxinator_config_path = String::from("Rmuxinator.toml");
+            let rmuxinator_config_arg = parse_config_file(&_rmuxinator_config_arg);
+
+            let server_id = String::from("pi-wall-server");
+            let mut windows: Vec<rmuxinator::Window> = vec![rmuxinator::Window {
+                layout: None,
+                name: Some(server_id.clone()),
+                panes: vec![rmuxinator::Pane {
+                    commands: vec![
+                        format!("echo 'ssh {id}'", id = server_id),
+                        format!("echo '~/scripts/start-pi-wall-broadcast.sh'"),
+                    ],
+                    name: None,
+                    start_directory: None,
+                }],
+                start_directory: Some(String::from("/home/peter/")),
+            }];
+            for row in rmuxinator_config_arg.unwrap().rows.iter() {
+                for client in row.screens.iter() {
+                    windows.push(rmuxinator::Window {
+                        layout: None,
+                        name: Some(client.id.clone()),
+                        panes: vec![rmuxinator::Pane {
+                            commands: vec![
+                                format!("echo 'ssh {id}'", id = client.id),
+                                format!(
+                                    "echo '~/scripts/start-pi-wall-listener.sh {id}'",
+                                    id = client.id
+                                ),
+                            ],
+                            name: None,
+                            start_directory: None,
+                        }],
+                        start_directory: Some(String::from("/home/peter/")),
+                    });
+                }
             }
 
-            let config = RmuxinatorConfig {
-                name: String::from("pi-wall"),
-                start_directory: String::from("/home/peter"),
-            };
-
-            let new_config = rmuxinator::Config {
-                pane_name_user_option: None,
+            let rmuxinator_config = rmuxinator::Config {
+                pane_name_user_option: Some(String::from("custom_pane_title")),
+                hooks: vec![],
                 layout: None,
                 name: String::from("pi-wall"),
                 start_directory: Some(String::from("/home/peter")),
-                hooks: vec![],
-                windows: vec![rmuxinator::Window {
-                    name: None,
-                    layout: None,
-                    start_directory: None,
-                    panes: vec![rmuxinator::Pane {
-                        name: None,
-                        commands: vec![String::from("echo 'it works'")],
-                        start_directory: None,
-                    }],
-                }],
+                windows: windows,
             };
-            println!("debug new_config: {:#?}", new_config);
+            // println!("debug rmuxinator_config: {:#?}", rmuxinator_config);
 
-            let toml_string = to_string(&new_config)
-                .map_err(|error| format!("CopyConfigToClients error: {}", error));
+            // NOTE: work around TOML ordering/table/value issues:
+            // https://gitlab.com/lib.rs/cargo_toml/-/issues/3
+            let new_config_as_toml_value = toml::Value::try_from(&rmuxinator_config).unwrap();
 
-            let mut file = File::create(String::from("Rmuxinator.toml"))
-                .map_err(|error| format!("CopyConfigToClients error: {}", error))
+            let toml_string = to_string(&new_config_as_toml_value)
+                .map_err(|error| format!("toml::to_string error: {}", error));
+
+            let mut file = File::create(rmuxinator_config_path.clone())
+                .map_err(|error| format!("CreateRmuxinatorTomlFile error: {}", error))
                 .unwrap();
 
             let _x = file
                 .write_all(toml_string.unwrap().as_bytes())
-                .map_err(|error| format!("CopyConfigToClients error: {}", error));
+                .map_err(|error| format!("WriteRmuxinatorTomlFile error: {}", error));
 
-            // let _rmuxinator_config_arg = cli_args
-            //     .rmuxinator_config_arg
-            //     .expect("rmuxinator config path is required");
-            let _result = start(String::from("Rmuxinator.toml"));
+            // TODO: would it make more sense for this to start headlessly?
+            // is that currently possible with rmuxinator?
+            let _result = start(String::from(rmuxinator_config_path));
             Ok(())
         }
     }
