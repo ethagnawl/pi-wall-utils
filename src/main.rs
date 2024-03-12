@@ -7,11 +7,10 @@ use std::error::Error;
 use std::ffi::OsString;
 use std::fmt;
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::Read;
 use std::process::Command;
 use std::str::FromStr;
 use tempfile::NamedTempFile;
-use toml::to_string;
 
 #[cfg(feature = "rmuxinator")]
 extern crate rmuxinator;
@@ -235,7 +234,7 @@ fn copy_pi_wall_to_client(
         }
     }
 
-    println!("copy piwall config output: {:#?}", output);
+    // println!("debug copy piwall config output: {:#?}", output);
 
     Ok(())
 }
@@ -376,23 +375,13 @@ fn generate_piwall_config(config: &Config, output_path: Option<&str>) {
 }
 
 #[cfg(feature = "rmuxinator")]
-fn start(cli_arg: String) -> Result<(), String> {
+fn start(rmux_config: rmuxinator::Config) -> Result<(), String> {
     // TODO: make call to rmuxinator in uniform fashion.
     // TODO: what should the params to this fn be? the cli args or the
 
     println!("rmuxinator has been included as an optional dependency");
 
-    let args = rmuxinator::CliArgs {
-        command: rmuxinator::CliCommand::Start,
-        project_name: cli_arg,
-    };
-
-    let config = rmuxinator::Config::new(&args)
-        .map_err(|error| format!("Problem parsing config file: {}", error))?;
-
-    println!("debug config: {:#?}", config);
-
-    rmuxinator::run_start(config).map_err(|error| format!("Application error: {}", error))
+    rmuxinator::run_start(rmux_config).map_err(|error| format!("Application error: {}", error))
 }
 
 #[cfg(not(feature = "rmuxinator"))]
@@ -402,10 +391,6 @@ fn start(_cli_arg: String) -> Result<(), String> {
     Ok(())
 }
 fn provision_pi_wall_client(hostname: &str, ip: &str) -> Result<(), String> {
-    // println!("provision_pi_wall_client");
-    // println!("hostname: {:#?}", hostname);
-    // println!("ip: {:#?}", ip);
-
     // TODO: this is a hogefest; what is the best way to either inline this
     // script on bundle it with the executable?
     let output = Command::new("~/scripts/provision-pi-wall-client.sh")
@@ -456,16 +441,20 @@ fn main() -> Result<(), String> {
             Ok(())
         }
         CliCommand::Start => {
+            // TODO: This function should accept either:
+            // - a path to an rmuxinator config file
+            // - a pi-wall-utils config file
+            // The rmuxinator config file results in the project being started as expected
+            // The pi-wall-utils config file gets used to instantiate an rmux
+            // Config struct which is then fed to rmuxinator::start
             let _rmuxinator_config_arg = cli_args
                 .rmuxinator_config_arg
                 .expect("rmuxinator config path is required");
 
-            // TODO: parameterize
-            let rmuxinator_config_path = String::from("Rmuxinator.toml");
             let rmuxinator_config_arg = parse_config_file(&_rmuxinator_config_arg);
 
             let server_id = String::from("pi-wall-server");
-            let mut windows: Vec<rmuxinator::Window> = vec![rmuxinator::Window {
+            let mut windows = vec![rmuxinator::Window {
                 layout: None,
                 name: Some(server_id.clone()),
                 panes: vec![rmuxinator::Pane {
@@ -500,33 +489,19 @@ fn main() -> Result<(), String> {
             }
 
             let rmuxinator_config = rmuxinator::Config {
-                pane_name_user_option: Some(String::from("custom_pane_title")),
                 hooks: vec![],
                 layout: None,
                 name: String::from("pi-wall"),
+                pane_name_user_option: Some(String::from("custom_pane_title")),
                 start_directory: Some(String::from("/home/peter")),
                 windows: windows,
             };
             // println!("debug rmuxinator_config: {:#?}", rmuxinator_config);
 
-            // NOTE: work around TOML ordering/table/value issues:
-            // https://gitlab.com/lib.rs/cargo_toml/-/issues/3
-            let new_config_as_toml_value = toml::Value::try_from(&rmuxinator_config).unwrap();
-
-            let toml_string = to_string(&new_config_as_toml_value)
-                .map_err(|error| format!("toml::to_string error: {}", error));
-
-            let mut file = File::create(rmuxinator_config_path.clone())
-                .map_err(|error| format!("CreateRmuxinatorTomlFile error: {}", error))
-                .unwrap();
-
-            let _x = file
-                .write_all(toml_string.unwrap().as_bytes())
-                .map_err(|error| format!("WriteRmuxinatorTomlFile error: {}", error));
-
-            // TODO: would it make more sense for this to start headlessly?
+            // TODO: Wouldn't it make more sense for this to start headlessly?
             // is that currently possible with rmuxinator?
-            let _result = start(String::from(rmuxinator_config_path));
+            let _result = start(rmuxinator_config);
+            // println!("debug _result: {:#?}", _result);
             Ok(())
         }
     }
